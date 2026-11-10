@@ -31,7 +31,7 @@ M_ABC = [A, B; B, C];
 M_DE = [D; E];
 
 % Calculate alpha
-alpha = (M_DE' * (M_ABC \ M_DE)) - 1;
+alpha = 1 / ((M_DE' * (M_ABC \ M_DE)) - 1);
 alpha
 
 % Calculate Q matrix
