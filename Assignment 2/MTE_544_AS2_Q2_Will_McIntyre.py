@@ -16,9 +16,8 @@ import random
 import pandas as pd
 
 def plot_ellipse(S, b, ax):
-    lambda_var = 9.80665
-    eigvals, eigvecs = np.linalg.eigh(lambda_var*S)
-    aa, bb = eigvals
+    eigvals, eigvecs = np.linalg.eigh(S)
+    aa, bb = 1 / np.sqrt(eigvals)
 
     theta = np.linspace(0, 2 * np.pi, 100)
     unit_circle = np.array([np.cos(theta), np.sin(theta)])
@@ -49,25 +48,82 @@ def is_positive_definite(matrix):
         return False
 
 def fit_ellipse_subset(points):
-    # Given some number of points (you have to determined this), 
-    # construct an ellipse that fits through those points.
+    # Given 5 points, construct the ellipse
+
+    x = points[:, 0]
+    y = points[:, 1]
+
+    # construct matrix M and constact vector k
+    M = np.column_stack((x**2, 2*x*y, y**2, -2*x, -2*y))
+    k = -np.ones(5)
+
+    try:
+        # solve for the coefficients:
+        v = np.linalg.solve(M, k)
+    except np.linalg.LinAlgError:
+        return None, None
+
+    # extract coefficients
+    A, B, C, D, E = v
+
+    M_ABC = np.array([[A, B], [B, C]])
+    M_DE = np.array([D, E])
+
+    try:
+        # Compute alpha, Q, and b using the Part 1 formulas
+        alpha = 1 / ((M_DE.T @ np.linalg.solve(M_ABC, M_DE)) - 1)
+        Q = alpha * M_ABC
+        b = np.linalg.solve(Q, alpha * M_DE)
+        return Q, b
+    except np.linalg.LinAlgError:
+        return None, None
     
 
-    ##### ADD your code here : #####
-    ...
-    ##### END #####
-    return Q, b
-
 def ransac_ellipse(data, num_iterations=1000, threshold=0.2):
-    inliers = []
-    # Given the data sets, perform RANSAC to find the best Q and b as well as the inliers
-    # Hint: You should use fit_ellipse_subset 
-    # Hint: in some case, the Q matrix might not be positive defintie, use is_positive_definite to check.
+    best_Q = None
+    best_b = None
+    best_inliers = np.array([])
+    max_inliers_count = 0
 
-    ##### ADD your code here : #####
-    ...
-    ##### END #####
-    return Q,b,inliers
+    for _ in range(num_iterations):
+        ## get random indices
+        indices = np.random.choice(len(data), size=5, replace=False)
+        subset = data[indices]
+
+        # fit to ellipse
+        Q, b = fit_ellipse_subset(subset)
+
+        # Ensure Q is valid and represents an ellipse (positive definite)
+        if Q is None or not is_positive_definite(Q):
+            continue
+
+        # regect centers that are far away from the data
+        # data is all around -20 and 20
+        if np.linalg.norm(b) > 15:
+            continue
+
+        # vector form of (p_i - b) for all points
+        p_minus_b = data - b
+
+        # calculate distance using equation from assignment
+        dist_sq = np.sum((p_minus_b @ Q) * p_minus_b, axis=1)
+
+        # prevent negative
+        dist_sq = np.maximum(dist_sq, 0)
+        dist = np.sqrt(dist_sq)
+
+        # apply the inlier inequality condition
+        inlier_mask = np.abs(dist - 1) <= threshold
+        current_inliers = data[inlier_mask]
+
+        # update best model if the current one has more inliers
+        if len(current_inliers) > max_inliers_count:
+            max_inliers_count = len(current_inliers)
+            best_Q = Q
+            best_b = b
+            best_inliers = current_inliers
+
+    return best_Q, best_b, best_inliers
 
 if __name__ == "__main__":
     # Load the data from CSV file and select N random points
