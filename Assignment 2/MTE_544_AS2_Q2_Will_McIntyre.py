@@ -16,6 +16,9 @@ import random
 import pandas as pd
 
 def plot_ellipse(S, b, ax):
+    ## updated the code here to get the eigenvalues
+    ## and then calcualte the semi-axis lengths
+    ## using 1 / sqrt(eigval)
     eigvals, eigvecs = np.linalg.eigh(S)
     aa, bb = 1 / np.sqrt(eigvals)
 
@@ -79,7 +82,7 @@ def fit_ellipse_subset(points):
         return None, None
     
 
-def ransac_ellipse(data, num_iterations=1000, threshold=0.2):
+def ransac_ellipse(data, num_iterations=1000, threshold=0.8):
     best_Q = None
     best_b = None
     best_inliers = np.array([])
@@ -97,9 +100,9 @@ def ransac_ellipse(data, num_iterations=1000, threshold=0.2):
         if Q is None or not is_positive_definite(Q):
             continue
 
-        # regect centers that are far away from the data
+        # reject centers that are far away from the data
         # data is all around -20 and 20
-        if np.linalg.norm(b) > 15:
+        if np.linalg.norm(b) > 20:
             continue
 
         # vector form of (p_i - b) for all points
@@ -127,7 +130,7 @@ def ransac_ellipse(data, num_iterations=1000, threshold=0.2):
 
 if __name__ == "__main__":
     # Load the data from CSV file and select N random points
-    N = 500
+    N = 1000
     all_data = pd.read_csv('data_x_y.csv').to_numpy()
     dataset = all_data[np.random.choice(all_data.shape[0], N, replace=False), :]
     # dataset is p
