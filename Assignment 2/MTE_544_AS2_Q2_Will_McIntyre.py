@@ -15,12 +15,11 @@ import scipy.linalg
 import random
 import pandas as pd
 
-def plot_ellipse(S, b, ax):
-    ## updated the code here to get the eigenvalues
-    ## and then calcualte the semi-axis lengths
-    ## using 1 / sqrt(eigval)
+def plot_ellipse(Q, b, ax):
+    S = scipy.linalg.sqrtm(np.linalg.inv(Q))
+    
     eigvals, eigvecs = np.linalg.eigh(S)
-    aa, bb = 1 / np.sqrt(eigvals)
+    aa, bb = eigvals
 
     theta = np.linspace(0, 2 * np.pi, 100)
     unit_circle = np.array([np.cos(theta), np.sin(theta)])
