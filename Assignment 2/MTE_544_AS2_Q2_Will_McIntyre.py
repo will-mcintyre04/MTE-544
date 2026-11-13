@@ -139,7 +139,7 @@ if __name__ == "__main__":
     
     # Plot the raw measurements and fitted ellipse
     fig, ax1 = plt.subplots(1, 1, figsize=(16, 8))
-    visualize_data(dataset, ax1, inliers, threshold=0.5)
+    visualize_data(dataset, ax1, inliers, threshold=0.08)
     plot_ellipse(Q, b_est, ax1)
     ax1.set_title("RANSAC Ellipse Fitting with Threshold Visualization")
 
